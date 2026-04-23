@@ -1,0 +1,19 @@
+{
+  "name": "development-loop",
+  "version": "0.1.0",
+  "description": "Strict, hook-enforced development loop: RESEARCH → TDD → IMPLEMENT → REVIEW → REFACTOR → LOOP. Deep research, deep review (static analysis + security), clean-code principles enforced at every step.",
+  "author": {
+    "name": "Patrik Szewczyk"
+  },
+  "keywords": [
+    "tdd",
+    "clean-code",
+    "code-review",
+    "static-analysis",
+    "security",
+    "workflow",
+    "hooks",
+    "enforcement"
+  ],
+  "license": "MIT"
+}

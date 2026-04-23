@@ -1,0 +1,6 @@
+.DS_Store
+node_modules/
+*.log
+
+# Local state created by the plugin at runtime in consumer repos
+.claude/development-loop.local.md

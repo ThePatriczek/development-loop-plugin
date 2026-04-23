@@ -1,0 +1,44 @@
+{
+  "name": "thepatriczek-plugins",
+  "owner": {
+    "name": "Patrik Szewczyk",
+    "email": "Patrik.Szewczyk@gmail.com"
+  },
+  "metadata": {
+    "description": "Personal marketplace by ThePatriczek — strict, hook-enforced development workflows for Claude Code.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "development-loop",
+      "source": "./plugins/development-loop",
+      "description": "Strict, ten-phase development loop (RESEARCH → RESEARCH-REVIEW → TDD-RED → TDD-GREEN → TDD-REVIEW → IMPLEMENTATION → IMPLEMENTATION-REVIEW → REFACTOR → REFACTOR-REVIEW → OVERALL-REVIEW → LOOP). Each phase has a dedicated skill and a dedicated agent; agent-type hooks dispatch the matching phase agent on UserPromptSubmit, Write/Edit/MultiEdit, and Stop. Deep overall-review runs context-detected static analysis, security checklist, clean-code audit, and Playwright MCP E2E when available.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Patrik Szewczyk"
+      },
+      "keywords": [
+        "tdd",
+        "clean-code",
+        "code-review",
+        "static-analysis",
+        "security",
+        "workflow",
+        "hooks",
+        "enforcement",
+        "review",
+        "refactor"
+      ],
+      "license": "MIT",
+      "category": "development-workflows",
+      "tags": [
+        "workflow",
+        "tdd",
+        "review",
+        "strict",
+        "hooks",
+        "agents"
+      ]
+    }
+  ]
+}

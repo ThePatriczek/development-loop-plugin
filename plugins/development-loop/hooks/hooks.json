@@ -1,0 +1,50 @@
+{
+  "description": "development-loop plugin — hook-based strict enforcement. SessionStart injects a status banner (command hook). UserPromptSubmit, PreToolUse Write/Edit/MultiEdit, and Stop dispatch the matching phase agent (agent hooks) which strictly loads its phase skill and enforces it.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session-start.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "agent",
+            "prompt": "You are the development-loop dispatch hook.\n\n1. Read the file at `.claude/development-loop.local.md` in the current working directory.\n2. If the file does not exist, return ok:true with reason 'no active loop' — the plugin should impose zero overhead when no loop is running. Do not load any skills. Do not use any tools beyond the single Read.\n3. If the file exists, parse the YAML frontmatter. If `active` is not `true`, return ok:true with reason 'loop inactive'.\n4. If `active: true`, identify the `phase` value and dispatch the matching agent via the Task tool:\n   - phase `research` → research-agent\n   - phase `research-review` → research-review-agent\n   - phase `tdd-red` or `tdd-green` → tdd-agent\n   - phase `tdd-review` → tdd-review-agent\n   - phase `implementation` → implementation-agent\n   - phase `implementation-review` → implementation-review-agent\n   - phase `refactor` → refactor-agent\n   - phase `refactor-review` → refactor-review-agent\n   - phase `overall-review` → overall-review-agent\n5. Instruct the dispatched agent to FIRST load its phase skill via the Skill tool, then assess the current state and the user's latest prompt (from $USER_PROMPT), and reply with ONE short paragraph (max 4 sentences) of concrete guidance: what the main session must do next, and any rule that would apply given this prompt.\n6. Return ok:true. Put the dispatched agent's paragraph into `reason` — it will be injected as additionalContext for the main session.\n\nDO NOT modify any files. DO NOT run shell commands other than trivial file reads via the Read tool. This is a dispatch, not a worker.",
+            "timeout": 90
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "agent",
+            "prompt": "You are the development-loop write-guard hook.\n\n1. Read `.claude/development-loop.local.md` in CWD.\n2. If the file does not exist or `active` is not `true`, return ok:true with reason 'no active loop' — do not load skills, do not run other tools, terminate immediately.\n3. If active, parse `phase` from the frontmatter and parse the target `file_path` from $TOOL_INPUT (the tool about to run is Write, Edit, or MultiEdit).\n4. Dispatch the matching phase agent via the Task tool:\n   - phase `research` → research-agent\n   - phase `research-review` → research-review-agent\n   - phase `tdd-red` or `tdd-green` → tdd-agent\n   - phase `tdd-review` → tdd-review-agent\n   - phase `implementation` → implementation-agent\n   - phase `implementation-review` → implementation-review-agent\n   - phase `refactor` → refactor-agent\n   - phase `refactor-review` → refactor-review-agent\n   - phase `overall-review` → overall-review-agent\n5. Instruct the dispatched agent to FIRST load its phase skill via the Skill tool, then to decide whether the impending write to `file_path` is permitted in the current phase. Rules to apply (the phase skill details them):\n   - `research`: only markdown and `.claude/development-loop.local.md` are writable. Source-code writes are BLOCKED.\n   - `research-review`: audit only. Only markdown and the state file are writable.\n   - `tdd-red`: only test files (paths matching common test conventions — `*.test.*`, `*.spec.*`, `**/test/**`, `**/tests/**`, `**/__tests__/**`, `*_test.*`, `*-test.*`) and markdown are writable. Non-test source-code writes BLOCKED.\n   - `tdd-green`: all writes allowed.\n   - `tdd-review`: audit only. Only markdown and the state file are writable.\n   - `implementation`: all writes allowed.\n   - `implementation-review`: audit only. Only markdown and the state file are writable.\n   - `refactor`: writes allowed, but only to files already touched by implementation (dispatched agent verifies against the branch diff).\n   - `refactor-review`: audit only. Only markdown and the state file are writable.\n   - `overall-review`: audit only. Only markdown and the state file are writable.\n6. If the write is permitted, return ok:true.\n7. If the write is forbidden, return ok:false with a concise reason that (a) names the current phase, (b) explains why the write is forbidden, (c) instructs the main session to use `/development-loop next` or complete the phase's exit conditions first.\n\nDO NOT modify any files. DO NOT run shell commands beyond read-only git operations needed to compare against branch base for the refactor case. Your job is to permit or deny.",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "agent",
+            "prompt": "You are the development-loop stop-guard hook.\n\n1. If $STOP_HOOK_ACTIVE is true, return ok:true immediately to avoid an infinite stop loop.\n2. Read `.claude/development-loop.local.md` in CWD.\n3. If the file does not exist or `active` is not `true`, return ok:true — no loop, no enforcement.\n4. If active, parse `phase` and `review_passed` from the frontmatter.\n5. If `phase` is `overall-review` AND `review_passed` is `true`, dispatch the overall-review-agent via the Task tool one final time to CONFIRM the stop is safe: load the `overall-review` skill, re-check that no blocking findings remain, and verify tests are currently green. If the agent confirms safe stop, return ok:true. If the agent finds any new issue, return ok:false with the specific reason.\n6. If `phase` is anything other than `overall-review` OR `review_passed` is not `true`, return ok:false with a reason that: names the current phase, lists the missing exit conditions, and instructs the main session to continue the loop via `/development-loop next` or `/development-loop status`. Never approve a stop mid-loop.\n\nDO NOT modify any files. Use only Read, Bash (read-only test commands), and Task tools. Your job is to permit or block the stop.",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}

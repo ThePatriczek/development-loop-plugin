@@ -67,7 +67,7 @@ As in `review-phase`, check the environment for project/user/global skills that 
 
 Decide:
 
-- **Goal fully met** → `/development-loop done` (archives state).
+- **Goal fully met** → `/development-loop done` (writes final progress summary, deletes state).
 - **Goal has more to it** → `/development-loop next` (loops back to `research`, `iteration++`, flags reset).
 
 ## Red flags

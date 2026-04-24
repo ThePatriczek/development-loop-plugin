@@ -10,7 +10,7 @@ The development loop stores its state in a per-context directory at the consumer
 
 **Invariant**: at most one `STATE.md` under `.development-loop/` has `active: true` at any time. Hooks enforce this.
 
-Archives land next to STATE.md: `.development-loop/<context-slug>/archive/iteration-<N>.md`.
+Per-iteration progress summaries land next to STATE.md at `.development-loop/<context-slug>/progress/iteration-<N>.md`, written by the orchestrator whenever an iteration completes (LOOP back or `done`). STATE.md is deleted on `done`; the `progress/` directory remains as the historical record. There is no separate raw-state archive — STATE's runtime flags have no long-term value once the iteration is summarized.
 
 Rationale for `.development-loop/` (not `.claude/`): the `.claude/` directory may be permission-restricted in consumer repos, and mixing per-project loop state with Claude Code's own config causes friction. A dedicated top-level dir is writable, inspectable, and easy to `.gitignore`.
 
@@ -107,7 +107,7 @@ implementation    → implementation-review  (no prerequisite flag; audited by r
 implementation-review → refactor           (requires implementation_review_passed = true)
 refactor          → refactor-review        (requires tests_passing = true)
 refactor-review   → overall-review         (requires refactor_review_passed = true)
-overall-review    → research (iteration++)   OR   done (archive state)
+overall-review    → research (iteration++)   OR   done (write progress, delete state)
                                            (requires review_passed = true for done)
 ```
 

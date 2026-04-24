@@ -29,7 +29,7 @@ The skill accepts one of five actions via `$ARGUMENTS`:
 | `start <goal>` | Create state file, enter `research` phase, load `research-phase` skill, show checklist. |
 | `next` | Advance phase in sequence. Verify exit conditions of current phase before transitioning. |
 | `status` | Read state file, print current phase + iteration + goal + checklist progress. |
-| `done` | Verify all exit conditions for the full loop are met, archive state file. |
+| `done` | Verify all exit conditions for the full loop are met, write the final iteration's progress summary, delete state file. |
 | `abort` | Delete state file after confirming with user. Warns that enforcement will stop. |
 
 Parse `$ARGUMENTS` as: first token = action, remainder = goal (for `start` only). If `$ARGUMENTS` is empty, default to `status`.
@@ -140,7 +140,7 @@ All actions except `start` must locate the active STATE.md:
 
 1. Refuse if any `.development-loop/*/STATE.md` already has `active: true` — tell the user to `abort` or `done` first.
 2. Require a goal. If missing, ask the user for one concrete sentence.
-3. Compute `<context-slug>` from the goal (see "State file" above). If `.development-loop/<context-slug>/` already exists (prior archive), suffix with `-2`, `-3`, … until free.
+3. Compute `<context-slug>` from the goal (see "State file" above). If `.development-loop/<context-slug>/` already exists (prior run), suffix with `-2`, `-3`, … until free.
 4. Write `.development-loop/<context-slug>/STATE.md` with `phase: research`, `iteration: 1`, current UTC timestamp, all flags false.
 5. **Load the `research-phase` skill** (via Skill tool) and relay its checklist to the user.
 6. Remind the user that hooks are now blocking. No writes will be permitted outside allowed paths until `tdd-red` starts writing tests.
@@ -150,7 +150,7 @@ All actions except `start` must locate the active STATE.md:
 1. Locate the active state file (see above). If none, refuse and tell the user to `start` first.
 2. Determine current phase and verify its exit conditions (see table above). If any condition is unmet, refuse and list the missing items.
 3. Transition the `phase` field to the next in sequence. Update relevant flags (e.g., `tests_written: true` when leaving `tdd-red`).
-4. If the new phase is `research` after `refactor`, increment `iteration`.
+4. **If transitioning from `overall-review` back to `research` (LOOP):** before incrementing `iteration`, write the completed iteration's progress file per "Iteration progress" below. Then reset per-iteration flags (`tests_written`, `tests_passing`, `research_review_passed`, `tdd_review_passed`, `implementation_review_passed`, `refactor_review_passed`, `review_passed`, `e2e_run`, `e2e_skipped` → `false`) and increment `iteration`.
 5. **Load the matching phase skill** via the Skill tool.
 6. Print the new phase's checklist and what is allowed / blocked in this phase.
 
@@ -163,14 +163,45 @@ All actions except `start` must locate the active STATE.md:
 ## Action: `done`
 
 1. Locate the active state file. Verify it is at `overall-review` with `review_passed: true` and all per-step review flags set. If not, refuse and list what is missing.
-2. Archive the state file by moving it to `.development-loop/<context-slug>/archive/iteration-<iteration>.md` (use `Bash` with `mkdir -p` + `mv`). The `STATE.md` is removed; the context directory remains as a historical record.
-3. Confirm to the user that enforcement is off.
+2. Write the final iteration's progress file per "Iteration progress" below.
+3. Delete `.development-loop/<context-slug>/STATE.md`. The context directory and its `progress/` subfolder remain as the historical record.
+4. Confirm to the user that enforcement is off.
 
 ## Action: `abort`
 
 1. Ask the user to confirm (this disables enforcement mid-flight).
-2. Locate the active state file and delete it. Leave the context directory (and any archive) in place so the user can restart with a suffixed slug.
+2. Locate the active state file and delete it. Leave the context directory (and any `progress/` entries) in place so the user can restart with a suffixed slug.
 3. Warn the user that the next `start` begins a fresh iteration.
+
+## Iteration progress
+
+Every completed iteration (both LOOP-back and `done`) writes a structured summary to `.development-loop/<context-slug>/progress/iteration-<N>.md`. Use `Write` (create the `progress/` directory first with `Bash` `mkdir -p` if missing).
+
+Template:
+
+```markdown
+# Iteration <N> — <goal>
+
+**Started:** <state.started_at>
+**Completed:** <now, ISO-8601 UTC>
+
+## Research
+<what prior art was found, the slice that was picked, resolved ambiguities>
+
+## TDD
+<failing test added and what it verifies; minimum code that turned it green>
+
+## Implementation
+<what was built; list dotčené files via `git diff --stat` against the iteration's base>
+
+## Refactor
+<what was cleaned, or "skipped — nothing to refactor">
+
+## Overall review
+<gates run, blocking / non-blocking findings, E2E result (run or skipped with reason)>
+```
+
+Populate each section from the loop's conversation context and, where possible, from content accumulated in the STATE body's review / findings sections during the iteration. If a section genuinely had no activity (e.g., refactor had nothing to clean), write a single line noting that — do not leave the section blank.
 
 ## Clean-code principles (MANDATORY every phase)
 

@@ -1,6 +1,6 @@
 {
   "name": "development-loop",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Strict, hook-enforced development loop: RESEARCH → TDD → IMPLEMENT → REVIEW → REFACTOR → LOOP. Deep research, deep review (static analysis + security), clean-code principles enforced at every step.",
   "author": {
     "name": "Patrik Szewczyk"

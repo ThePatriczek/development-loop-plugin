@@ -130,7 +130,7 @@ e2e_skipped: false
 
 Add `.development-loop/` to the consumer repo's `.gitignore`.
 
-Archives of completed iterations live at `.development-loop/<context-slug>/archive/iteration-<N>.md`.
+Each completed iteration's structured summary (research / tdd / implementation / refactor / overall-review sections) lands at `.development-loop/<context-slug>/progress/iteration-<N>.md`. The orchestrator writes it on LOOP back and on `done`. STATE.md is deleted on `done`; the `progress/` directory remains.
 
 **Why `.development-loop/` and not `.claude/`?** The `.claude/` directory is often permission-restricted or reserved for Claude Code's own config. A dedicated top-level dir avoids write conflicts and keeps loop state cleanly separated from tool config.
 

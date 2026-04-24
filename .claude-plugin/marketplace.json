@@ -6,14 +6,14 @@
   },
   "metadata": {
     "description": "Personal marketplace by ThePatriczek — strict, hook-enforced development workflows for Claude Code.",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "plugins": [
     {
       "name": "development-loop",
       "source": "./plugins/development-loop",
-      "description": "Strict, ten-phase development loop (RESEARCH → RESEARCH-REVIEW → TDD-RED → TDD-GREEN → TDD-REVIEW → IMPLEMENTATION → IMPLEMENTATION-REVIEW → REFACTOR → REFACTOR-REVIEW → OVERALL-REVIEW → LOOP). Each phase has a dedicated skill and a dedicated agent; agent-type hooks dispatch the matching phase agent on UserPromptSubmit, Write/Edit/MultiEdit, and Stop. Deep overall-review runs context-detected static analysis, security checklist, clean-code audit, and Playwright MCP E2E when available.",
-      "version": "0.1.0",
+      "description": "Strict, ten-phase development loop (RESEARCH → RESEARCH-REVIEW → TDD-RED → TDD-GREEN → TDD-REVIEW → IMPLEMENTATION → IMPLEMENTATION-REVIEW → REFACTOR → REFACTOR-REVIEW → OVERALL-REVIEW → LOOP). Each phase has a dedicated skill and a dedicated agent; agent-type hooks dispatch the matching phase agent on UserPromptSubmit, Write/Edit/MultiEdit, and Stop. Deep overall-review runs context-detected static analysis, security checklist, clean-code audit, and Playwright MCP E2E when available. State lives at .development-loop/<context>/STATE.md with per-iteration progress summaries at progress/iteration-<N>.md. Each phase agent supports an optional project-local extension skill (development-loop-<phase>) that is preloaded automatically when present.",
+      "version": "0.2.0",
       "author": {
         "name": "Patrik Szewczyk"
       },

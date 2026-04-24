@@ -59,7 +59,7 @@ If the slice is large (multiple files, new subsystem, unfamiliar code area):
 Hooks permit writes to:
 
 - `**/*.md` — plans, notes, doc updates
-- `.development-loop/**` — state file and archive
+- `.development-loop/**` — state file and per-iteration progress summaries
 
 Hooks block writes to any source file (`.ts`, `.tsx`, `.js`, `.py`, `.go`, `.rs`, `.java`, `.kt`, `.rb`, `.php`, `.c`, `.cpp`, `.cs`, etc.). If you need to add a note, use markdown.
 

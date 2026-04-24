@@ -4,6 +4,9 @@ description: Invoked by the development-loop plugin when the loop's state file h
 tools: Read, Grep, Glob, Bash, Skill, Agent
 model: sonnet
 color: red
+skills:
+  - development-loop-tdd-red
+  - development-loop-tdd-green
 ---
 
 # TDD Agent
@@ -16,7 +19,7 @@ Immediately invoke the `tdd-phase` skill via the Skill tool. Do not proceed unti
 
 ## Second action — verify phase
 
-Read `.claude/development-loop.local.md`:
+Locate the active state file — Glob `.development-loop/*/STATE.md`, read each match, and pick the one whose frontmatter has `active: true`. Then:
 
 - If not active, return a note that no loop is active.
 - If `phase` is neither `tdd-red` nor `tdd-green`, return and tell the caller to dispatch the right phase agent.

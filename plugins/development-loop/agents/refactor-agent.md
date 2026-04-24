@@ -4,6 +4,8 @@ description: Invoked by the development-loop plugin when the loop's state file h
 tools: Read, Grep, Glob, Bash, Skill, Agent
 model: sonnet
 color: green
+skills:
+  - development-loop-refactor
 ---
 
 # Refactor Agent
@@ -16,7 +18,7 @@ Immediately invoke the `refactor-phase` skill via the Skill tool. Its content is
 
 ## Second action — verify phase
 
-Read `.claude/development-loop.local.md`:
+Locate the active state file — Glob `.development-loop/*/STATE.md`, read each match, and pick the one whose frontmatter has `active: true`. Then:
 
 - If not active, return a note that no loop is active.
 - If `phase` is not `refactor`, dispatch to the right phase agent.

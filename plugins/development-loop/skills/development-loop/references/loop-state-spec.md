@@ -1,10 +1,18 @@
 # Loop State File — Specification
 
-The development loop stores its state in a single file at the consumer repo root:
+The development loop stores its state in a per-context directory at the consumer repo root:
 
 ```
-<project-root>/.claude/development-loop.local.md
+<project-root>/.development-loop/<context-slug>/STATE.md
 ```
+
+`<context-slug>` is derived from the `goal` on `start` — slugified (ASCII lowercase, non-alphanumerics collapsed to `-`, trimmed, max 40 chars). If the slug directory already exists, the orchestrator appends `-2`, `-3`, …
+
+**Invariant**: at most one `STATE.md` under `.development-loop/` has `active: true` at any time. Hooks enforce this.
+
+Archives land next to STATE.md: `.development-loop/<context-slug>/archive/iteration-<N>.md`.
+
+Rationale for `.development-loop/` (not `.claude/`): the `.claude/` directory may be permission-restricted in consumer repos, and mixing per-project loop state with Claude Code's own config causes friction. A dedicated top-level dir is writable, inspectable, and easy to `.gitignore`.
 
 ## File format
 
@@ -125,28 +133,37 @@ Backward transitions reset only the relevant failed review flag, keeping earlier
 
 ## Hook access
 
-Hooks read the file with simple parsing:
+Hooks glob for the single active state file:
 
 ```bash
-STATE_FILE="$CLAUDE_PROJECT_DIR/.claude/development-loop.local.md"
-[ -f "$STATE_FILE" ] || exit 0
-active=$(awk -F': *' '/^active:/{print $2; exit}' "$STATE_FILE")
+LOOP_DIR="$CLAUDE_PROJECT_DIR/.development-loop"
+[ -d "$LOOP_DIR" ] || exit 0
+
+STATE_FILE=""
+shopt -s nullglob
+for candidate in "$LOOP_DIR"/*/STATE.md; do
+  if grep -qE '^active:[[:space:]]*true[[:space:]]*$' "$candidate"; then
+    STATE_FILE="$candidate"
+    break
+  fi
+done
+[ -n "$STATE_FILE" ] || exit 0
+
 phase=$(awk -F': *' '/^phase:/{print $2; exit}' "$STATE_FILE")
-[ "$active" = "true" ] || exit 0
 ```
 
-The hook lib script `hooks/scripts/loop-state.sh` provides these helpers.
+Agent-type hooks use Glob + Read instead of shell.
 
 ## Invariants
 
-- Exactly one state file at a time per project.
+- At most one `STATE.md` under `.development-loop/` has `active: true` at any time.
 - `active: true` implies hooks enforce.
-- Missing file implies inactive.
+- Missing/empty `.development-loop/` implies inactive.
 - Phase always one of the enum values; unknown values treated as inactive (safe default).
 - Never manually edit `phase` — always via the orchestrator so exit conditions are checked.
 - The overall-review gate (`review_passed: true`) can only be reached via the overall-review phase and its agent; no other path sets that flag.
 
 ## Safety
 
-- Never commit the state file — it belongs in the consumer repo's `.gitignore`.
+- Never commit loop state — `.development-loop/` belongs in the consumer repo's `.gitignore`.
 - The state file contains no secrets; the goal string is the only free-form content — keep it short and non-sensitive.

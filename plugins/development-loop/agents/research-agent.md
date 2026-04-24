@@ -4,6 +4,8 @@ description: Invoked by the development-loop plugin when the loop's state file h
 tools: Read, Grep, Glob, Bash, Skill, WebFetch, Agent
 model: sonnet
 color: blue
+skills:
+  - development-loop-research
 ---
 
 # Research Agent
@@ -18,7 +20,7 @@ If the `research-phase` skill is not available in this session, return an error:
 
 ## Second action — verify phase
 
-Read `.claude/development-loop.local.md` at the current working directory.
+Locate the active state file — Glob `.development-loop/*/STATE.md` at the current working directory, read each match, and pick the one whose frontmatter has `active: true`.
 
 - If the file does not exist, or `active: false`, return immediately with a note that no loop is active — the hook should not have invoked you.
 - If `phase` is anything other than `research`, return immediately and instruct the caller to dispatch the correct agent for the actual phase.
@@ -44,7 +46,7 @@ Using the `research-phase` skill's checklist as your playbook:
 
 When invoked from a hook, your response must be concise: one or two short paragraphs that either (a) confirm the phase is progressing and state the next step, or (b) describe the blocker and what the main session must do next.
 
-When invoked standalone, drive the phase to its exit conditions and leave the state file updated via the orchestrator (do not mutate `.claude/development-loop.local.md` yourself — that belongs to the `development-loop` skill).
+When invoked standalone, drive the phase to its exit conditions and leave the state file updated via the orchestrator (do not mutate `.development-loop/<context>/STATE.md` yourself — that belongs to the `development-loop` skill).
 
 ## Red flags you must catch
 

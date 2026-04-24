@@ -92,7 +92,7 @@ Inside any repository you want to work on:
 
 The orchestrator will:
 
-1. Create `.claude/development-loop.local.md` with `active: true, phase: research, goal: ...`
+1. Create `.development-loop/<context-slug>/STATE.md` with `active: true, phase: research, goal: ...` (the slug is derived from the goal)
 2. Load the `research-phase` skill and display its checklist
 3. On every subsequent prompt / write / stop, hooks dispatch the matching phase agent
 
@@ -107,7 +107,7 @@ Advance phases:
 
 ## State file
 
-The loop stores its state at `<project-root>/.claude/development-loop.local.md`:
+The loop stores its state at `<project-root>/.development-loop/<context-slug>/STATE.md` (the slug is derived from the `goal` string — lowercase, hyphenated, max 40 chars):
 
 ```yaml
 ---
@@ -128,11 +128,25 @@ e2e_skipped: false
 ---
 ```
 
-Add `.claude/development-loop.local.md` to the consumer repo's `.gitignore`.
+Add `.development-loop/` to the consumer repo's `.gitignore`.
+
+Archives of completed iterations live at `.development-loop/<context-slug>/archive/iteration-<N>.md`.
+
+**Why `.development-loop/` and not `.claude/`?** The `.claude/` directory is often permission-restricted or reserved for Claude Code's own config. A dedicated top-level dir avoids write conflicts and keeps loop state cleanly separated from tool config.
 
 ## Disabling enforcement temporarily
 
-Delete `.claude/development-loop.local.md`, or run `/development-loop abort`.
+Delete the active `.development-loop/<context-slug>/STATE.md`, or run `/development-loop abort`.
+
+## Extending per project
+
+Each phase has an optional, project-local extension slot. Create a standard Claude Code skill at `.claude/skills/development-loop-<phase>/SKILL.md` in your consumer repo and it will be preloaded into the matching phase agent's context automatically. If the skill does not exist, the agent behaves as shipped — zero overhead.
+
+Extension slot names (one per phase):
+
+`development-loop-research`, `development-loop-research-review`, `development-loop-tdd-red`, `development-loop-tdd-green`, `development-loop-tdd-review`, `development-loop-implementation`, `development-loop-implementation-review`, `development-loop-refactor`, `development-loop-refactor-review`, `development-loop-overall-review`.
+
+The extension is a normal skill — see the [official skills documentation](https://code.claude.com/docs/en/skills) for the format. Use it for project-specific rules that should augment (not replace) the built-in phase discipline.
 
 ## Philosophy
 

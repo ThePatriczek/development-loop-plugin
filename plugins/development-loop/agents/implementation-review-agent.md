@@ -4,6 +4,8 @@ description: Invoked by the development-loop plugin when the loop's state file h
 tools: Read, Grep, Glob, Bash, Skill
 model: sonnet
 color: yellow
+skills:
+  - development-loop-implementation-review
 ---
 
 # Implementation Review Agent
@@ -16,7 +18,7 @@ Immediately invoke the `implementation-review` skill via the Skill tool. Its che
 
 ## Second action — verify phase
 
-Read `.claude/development-loop.local.md`:
+Locate the active state file — Glob `.development-loop/*/STATE.md`, read each match, and pick the one whose frontmatter has `active: true`. Then:
 
 - If not active, return that no loop is active.
 - If `phase` is not `implementation-review`, dispatch to the right phase agent.

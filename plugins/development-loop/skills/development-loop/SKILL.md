@@ -71,7 +71,19 @@ After `overall-review`, decide: **LOOP** (goal not fully met → back to `resear
 
 ## State file
 
-Location: `<project-root>/.claude/development-loop.local.md`
+Location: `<project-root>/.development-loop/<context-slug>/STATE.md`
+
+`<context-slug>` is derived from the `goal` on `start`:
+
+- lowercase, ASCII only (strip diacritics)
+- replace any run of non-alphanumerics with a single `-`
+- trim leading/trailing `-`
+- truncate to 40 characters
+- if the resulting slug directory already exists (leftover from a prior loop on the same topic), append `-2`, `-3`, … until unused
+
+Example: `goal: "Add retry logic to API client with exponential backoff"` → `.development-loop/add-retry-logic-to-api-client-with-exp/STATE.md`
+
+**Invariant**: at most one `STATE.md` anywhere under `.development-loop/` has `active: true` at any time. Hooks enforce this.
 
 Format (YAML frontmatter + markdown body):
 
@@ -113,19 +125,29 @@ e2e_skipped: false
 
 See `references/loop-state-spec.md` for the full schema and transition rules.
 
-Create the `.claude/` directory if it does not exist. Always write the state file via the `Write` tool (not via `Bash`).
+Create the `.development-loop/<context-slug>/` directory tree if it does not exist. Always write the state file via the `Write` tool (not via `Bash`).
+
+## Finding the active state file
+
+All actions except `start` must locate the active STATE.md:
+
+1. Glob `.development-loop/*/STATE.md`.
+2. Read each match; pick the one whose frontmatter has `active: true`.
+3. If zero active → treat as "no active loop".
+4. If more than one active → abort the action and instruct the user to manually resolve (this is an invariant violation).
 
 ## Action: `start <goal>`
 
-1. Refuse if `.claude/development-loop.local.md` exists and `active: true` — tell the user to `abort` or `done` first.
+1. Refuse if any `.development-loop/*/STATE.md` already has `active: true` — tell the user to `abort` or `done` first.
 2. Require a goal. If missing, ask the user for one concrete sentence.
-3. Write the state file with `phase: research`, `iteration: 1`, current UTC timestamp, all flags false.
-4. **Load the `research-phase` skill** (via Skill tool) and relay its checklist to the user.
-5. Remind the user that hooks are now blocking. No writes will be permitted outside allowed paths until `tdd-red` starts writing tests.
+3. Compute `<context-slug>` from the goal (see "State file" above). If `.development-loop/<context-slug>/` already exists (prior archive), suffix with `-2`, `-3`, … until free.
+4. Write `.development-loop/<context-slug>/STATE.md` with `phase: research`, `iteration: 1`, current UTC timestamp, all flags false.
+5. **Load the `research-phase` skill** (via Skill tool) and relay its checklist to the user.
+6. Remind the user that hooks are now blocking. No writes will be permitted outside allowed paths until `tdd-red` starts writing tests.
 
 ## Action: `next`
 
-1. Read state file. If missing or `active: false`, refuse and tell the user to `start` first.
+1. Locate the active state file (see above). If none, refuse and tell the user to `start` first.
 2. Determine current phase and verify its exit conditions (see table above). If any condition is unmet, refuse and list the missing items.
 3. Transition the `phase` field to the next in sequence. Update relevant flags (e.g., `tests_written: true` when leaving `tdd-red`).
 4. If the new phase is `research` after `refactor`, increment `iteration`.
@@ -134,20 +156,20 @@ Create the `.claude/` directory if it does not exist. Always write the state fil
 
 ## Action: `status`
 
-1. Read state file. If missing, print "no active loop" and stop.
-2. Print: phase, iteration, goal, flags, time since `started_at`, and the checklist with ticked items where flags indicate completion.
+1. Locate the active state file. If none, print "no active loop" and stop.
+2. Print: context slug, phase, iteration, goal, flags, time since `started_at`, and the checklist with ticked items where flags indicate completion.
 3. Remind which phase skill is authoritative right now.
 
 ## Action: `done`
 
-1. Verify the state is at `overall-review` with `review_passed: true` and all per-step review flags set. If not, refuse and list what is missing.
-2. Archive the state file by moving it to `.claude/development-loop.archive/<goal-slug>-<iteration>.md` (use `Bash` with `mkdir -p` + `mv`).
+1. Locate the active state file. Verify it is at `overall-review` with `review_passed: true` and all per-step review flags set. If not, refuse and list what is missing.
+2. Archive the state file by moving it to `.development-loop/<context-slug>/archive/iteration-<iteration>.md` (use `Bash` with `mkdir -p` + `mv`). The `STATE.md` is removed; the context directory remains as a historical record.
 3. Confirm to the user that enforcement is off.
 
 ## Action: `abort`
 
 1. Ask the user to confirm (this disables enforcement mid-flight).
-2. Delete `.claude/development-loop.local.md`.
+2. Locate the active state file and delete it. Leave the context directory (and any archive) in place so the user can restart with a suffixed slug.
 3. Warn the user that the next `start` begins a fresh iteration.
 
 ## Clean-code principles (MANDATORY every phase)
